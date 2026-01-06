@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestoNexus | Ecosistema Digital para Restaurantes</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Iconos (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky blue
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            success: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar para un look SaaS nativo */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilos específicos para tickets POS */
+        .ticket-paper {
+            background-image: radial-gradient(#e5e7eb 1px, transparent 0);
+            background-size: 10px 10px;
+        }
+        .dark .ticket-paper {
+            background-image: radial-gradient(#374151 1px, transparent 0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans h-screen flex overflow-hidden transition-colors duration-300">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-20 hidden md:flex shadow-lg">
+        <div class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2 text-brand-500 font-bold text-xl tracking-tight">
+                <i data-lucide="layers" class="w-8 h-8"></i>
+                <span>RestoNexus</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Operación</p>
+            <button onclick="router('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-brand-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400 transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </button>
+            <button onclick="router('pos')" id="nav-pos" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="monitor" class="w-5 h-5"></i> POS (Caja)
+            </button>
+            <button onclick="router('kds')" id="nav-kds" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="chef-hat" class="w-5 h-5"></i> KDS (Cocina)
+            </button>
+            <button onclick="router('oms')" id="nav-oms" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="clipboard-list" class="w-5 h-5"></i> Pedidos (OMS)
+            </button>
+
+            <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2">Gestión</p>
+            <button onclick="router('menu')" id="nav-menu" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="qr-code" class="w-5 h-5"></i> Menú QR
+            </button>
+            <button onclick="router('reports')" id="nav-reports" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Reportes
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <img class="h-9 w-9 rounded-full bg-gray-300" src="https://ui-avatars.com/api/?name=Admin+User&background=0ea5e9&color=fff" alt="">
+                <div>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">Admin General</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Sucursal Central</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+        <!-- Topbar -->
+        <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 z-10">
+            <!-- Mobile Menu Button -->
+            <button class="md:hidden p-2 text-gray-600 dark:text-gray-300" onclick="toggleSidebar()">
+                <i data-lucide="menu"></i>
+            </button>
+            
+            <h2 id="page-title" class="text-lg font-semibold text-gray-800 dark:text-white">Dashboard General</h2>
+
+            <div class="flex items-center gap-4">
+                <!-- Branch Selector (Con evento onchange) -->
+                <div class="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-md">
+                    <i data-lucide="store" class="w-4 h-4 text-gray-500"></i>
+                    <select id="branch-selector" onchange="updateDashboardData(this.value)" class="bg-transparent text-sm border-none focus:ring-0 text-gray-700 dark:text-gray-200 cursor-pointer outline-none">
+                        <option value="reforma">Sucursal Reforma</option>
+                        <option value="centro">Sucursal Centro</option>
+                        <option value="delivery">Delivery Hub</option>
+                    </select>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-yellow-400 transition-colors">
+                    <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
+                </button>
+                
+                <!-- Notifications -->
+                <button class="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300 transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div id="content-area" class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6 relative">
+            
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="fade-in space-y-6">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ventas Hoy</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1" id="kpi-sales">$12,450.00</h3>
+                                <span class="text-xs text-green-500 font-medium flex items-center mt-1" id="kpi-sales-comp">
+                                    <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> +12% vs ayer
+                                </span>
+                            </div>
+                            <div class="p-2 bg-brand-50 dark:bg-brand-900/30 rounded-lg text-brand-600 dark:text-brand-400">
+                                <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Órdenes Activas</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1" id="kpi-orders">8</h3>
+                                <span class="text-xs text-gray-500 font-medium mt-1" id="kpi-orders-comp">
+                                    3 KDS · 2 Delivery · 3 Mesa
+                                </span>
+                            </div>
+                            <div class="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+                                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tiempo Prep. Promedio</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1" id="kpi-prep">14m 20s</h3>
+                                <span class="text-xs text-green-500 font-medium flex items-center mt-1" id="kpi-prep-comp">
+                                    <i data-lucide="arrow-down" class="w-3 h-3 mr-1"></i> -2m vs objetivo
+                                </span>
+                            </div>
+                            <div class="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ticket Promedio</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mt-1" id="kpi-ticket">$450.00</h3>
+                                <span class="text-xs text-gray-500 font-medium mt-1" id="kpi-ticket-comp">
+                                    Estable vs semana pasada
+                                </span>
+                            </div>
+                            <div class="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+                                <i data-lucide="receipt" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts & Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main Chart -->
+                    <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-semibold text-gray-800 dark:text-white">Flujo de Ventas (Tiempo Real)</h3>
+                            <div class="flex gap-2">
+                                <span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-brand-500 mr-1"></span> POS</span>
+                                <span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-purple-500 mr-1"></span> Delivery</span>
+                            </div>
+                        </div>
+                        <div class="h-64 w-full">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Alerts & Stock -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                        <h3 class="font-semibold text-gray-800 dark:text-white mb-4">Alertas Operativas</h3>
+                        <div class="space-y-3 flex-1 overflow-auto">
+                            <div class="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
+                                <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-red-700 dark:text-red-300">Inventario Crítico</p>
+                                    <p class="text-xs text-red-600 dark:text-red-400">Queso Mozzarella por debajo de 2kg.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                                <i data-lucide="clock" class="w-5 h-5 text-yellow-500 shrink-0 mt-0.5"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-yellow-700 dark:text-yellow-300">Retraso en Cocina</p>
+                                    <p class="text-xs text-yellow-600 dark:text-yellow-400">Orden #1024 supera los 25 min.</p>
+                                </div>
+                            </div>
+                             <div class="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                                <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Cierre de Caja</p>
+                                    <p class="text-xs text-blue-600 dark:text-blue-400">Recuerda realizar el corte parcial.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: POS -->
+            <div id="view-pos" class="hidden h-full flex flex-col md:flex-row gap-4">
+                <!-- Menu Grid -->
+                <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <!-- Categories -->
+                    <div class="flex overflow-x-auto gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 scrollbar-hide">
+                        <button class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium shadow-sm whitespace-nowrap">Todo</button>
+                        <button class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 whitespace-nowrap">Bebidas</button>
+                        <button class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 whitespace-nowrap">Entradas</button>
+                        <button class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 whitespace-nowrap">Hamburguesas</button>
+                        <button class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 whitespace-nowrap">Postres</button>
+                    </div>
+                    <!-- Products -->
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="pos-products-grid">
+                            <!-- Items inserted via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Ticket -->
+                <div class="w-full md:w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col ticket-paper">
+                    <div class="p-4 border-b border-dashed border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-white">Orden #<span id="pos-order-id">2045</span></h3>
+                            <span class="bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300 text-xs px-2 py-1 rounded">Mesa 4</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 text-xs py-1 px-2 bg-brand-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400 rounded border border-brand-200 dark:border-gray-600">Comer Aquí</button>
+                            <button class="flex-1 text-xs py-1 px-2 bg-white dark:bg-gray-800 text-gray-500 rounded border border-gray-200 dark:border-gray-600">Para Llevar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Cart Items -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="pos-cart-items">
+                        <div class="text-center text-gray-400 mt-10 text-sm">
+                            <i data-lucide="shopping-cart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            Agrega productos
+                        </div>
+                    </div>
+
+                    <!-- Totals & Actions -->
+                    <div class="p-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            <span>Subtotal</span>
+                            <span id="pos-subtotal">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            <span>Impuestos (16%)</span>
+                            <span id="pos-tax">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-xl font-bold text-gray-900 dark:text-white mb-4">
+                            <span>Total</span>
+                            <span id="pos-total">$0.00</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-4 gap-2 mb-3">
+                             <button class="col-span-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"><i data-lucide="trash-2" class="w-5 h-5 mx-auto"></i></button>
+                             <button class="col-span-3 p-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-lg shadow-brand-500/30 transition-all flex items-center justify-center gap-2" onclick="processCheckout()">
+                                COBRAR
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: KDS -->
+            <div id="view-kds" class="hidden h-full flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex gap-2">
+                        <span class="px-3 py-1 bg-white dark:bg-gray-800 rounded-full text-xs font-semibold shadow text-gray-600 dark:text-gray-300">Promedio: 12m</span>
+                        <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 rounded-full text-xs font-semibold text-red-600 dark:text-red-400">Retrasadas: 2</span>
+                    </div>
+                    <div class="flex gap-2 text-sm">
+                         <button class="text-brand-600 font-medium">Todas</button>
+                         <button class="text-gray-400">Cocina</button>
+                         <button class="text-gray-400">Barra</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-10" id="kds-grid">
+                    <!-- KDS Cards generated by JS -->
+                </div>
+            </div>
+
+            <!-- VIEW: OMS (Orders) -->
+            <div id="view-oms" class="hidden fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Buscar orden #, cliente..." class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white w-64">
+                            <button class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300"><i data-lucide="filter" class="w-5 h-5"></i></button>
+                        </div>
+                        <div class="flex gap-2">
+                             <button class="px-3 py-1.5 text-xs font-medium bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded-full">Activas</button>
+                             <button class="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full">Historial</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-3">Orden ID</th>
+                                    <th class="px-6 py-3">Canal</th>
+                                    <th class="px-6 py-3">Cliente</th>
+                                    <th class="px-6 py-3">Total</th>
+                                    <th class="px-6 py-3">Estado</th>
+                                    <th class="px-6 py-3">Tiempo</th>
+                                    <th class="px-6 py-3 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="oms-table-body">
+                                <!-- Rows by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- VIEW: QR MENU EDITOR -->
+            <div id="view-menu" class="hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">Editor de Menú Digital</h3>
+                        <p class="text-sm text-gray-500">Los cambios se reflejan instantáneamente en el código QR.</p>
+                    </div>
+                    <button class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i data-lucide="plus"></i> Nuevo Producto
+                    </button>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                     <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-3">Producto</th>
+                                    <th class="px-6 py-3">Categoría</th>
+                                    <th class="px-6 py-3">Precio</th>
+                                    <th class="px-6 py-3 text-center">En Stock</th>
+                                    <th class="px-6 py-3 text-center">Disponible QR</th>
+                                    <th class="px-6 py-3 text-right">Editar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="menu-table-body">
+                                <!-- Menu Items by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: REPORTS -->
+            <div id="view-reports" class="hidden fade-in space-y-6">
+                <!-- Filters & Actions -->
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300 shrink-0">Periodo:</span>
+                        <select class="w-full md:w-48 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white">
+                            <option>Últimos 7 días</option>
+                            <option>Este Mes</option>
+                            <option>Mes Pasado</option>
+                            <option>Este Año</option>
+                        </select>
+                    </div>
+                    <button onclick="showNotification('Exportando...', 'Generando archivo CSV de ventas.', 'success')" class="w-full md:w-auto flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                    </button>
+                </div>
+
+                <!-- Report Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                        <h3 class="font-semibold text-gray-800 dark:text-white mb-4">Ventas por Categoría</h3>
+                        <div class="h-64 relative w-full">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                        <h3 class="font-semibold text-gray-800 dark:text-white mb-4">Métodos de Pago</h3>
+                        <div class="h-64 relative w-full flex justify-center">
+                            <canvas id="paymentMethodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Financial Table -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800 dark:text-white">Cierre Diario de Ventas</h3>
+                        <span class="text-xs text-gray-500">Últimos 3 días</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-3">Fecha</th>
+                                    <th class="px-6 py-3"># Órdenes</th>
+                                    <th class="px-6 py-3">Venta Bruta</th>
+                                    <th class="px-6 py-3">Descuentos</th>
+                                    <th class="px-6 py-3 text-right">Venta Neta</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td class="px-6 py-4">04 Ene 2026</td>
+                                    <td class="px-6 py-4">145</td>
+                                    <td class="px-6 py-4">$18,200.00</td>
+                                    <td class="px-6 py-4 text-red-500">-$450.00</td>
+                                    <td class="px-6 py-4 font-bold text-right">$17,750.00</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td class="px-6 py-4">03 Ene 2026</td>
+                                    <td class="px-6 py-4">132</td>
+                                    <td class="px-6 py-4">$15,850.00</td>
+                                    <td class="px-6 py-4 text-red-500">-$210.00</td>
+                                    <td class="px-6 py-4 font-bold text-right">$15,640.00</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td class="px-6 py-4">02 Ene 2026</td>
+                                    <td class="px-6 py-4">156</td>
+                                    <td class="px-6 py-4">$19,400.00</td>
+                                    <td class="px-6 py-4 text-red-500">-$600.00</td>
+                                    <td class="px-6 py-4 font-bold text-right">$18,800.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal Notifications (Example) -->
+    <div id="notification-toast" class="fixed bottom-4 right-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <div id="notif-icon"><i data-lucide="check-circle" class="w-5 h-5 text-green-400 dark:text-green-600"></i></div>
+        <div>
+            <h4 class="font-bold text-sm" id="notif-title">Orden Enviada</h4>
+            <p class="text-xs opacity-90" id="notif-msg">La orden #2045 se envió a KDS.</p>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // --- DATA & STATE ---
+        const products = [
+            { id: 1, name: "Burger Clásica", category: "Hamburguesas", price: 120, image: "🍔", stock: true, qr_active: true },
+            { id: 2, name: "Burger Doble Queso", category: "Hamburguesas", price: 155, image: "🧀", stock: true, qr_active: true },
+            { id: 3, name: "Papas Trufadas", category: "Entradas", price: 85, image: "🍟", stock: true, qr_active: true },
+            { id: 4, name: "Refresco 355ml", category: "Bebidas", price: 35, image: "🥤", stock: true, qr_active: true },
+            { id: 5, name: "Cerveza Artesanal", category: "Bebidas", price: 90, image: "🍺", stock: false, qr_active: false },
+            { id: 6, name: "Cheesecake", category: "Postres", price: 95, image: "🍰", stock: true, qr_active: true },
+            { id: 7, name: "Aros de Cebolla", category: "Entradas", price: 65, image: "🧅", stock: true, qr_active: true },
+            { id: 8, name: "Malteada Vainilla", category: "Bebidas", price: 75, image: "🍦", stock: true, qr_active: true },
+        ];
+
+        let cart = [];
+        let orders = [
+            { id: 2040, table: "Mesa 1", items: [{name: "Burger Clásica", qty: 2}], status: "ready", startTime: Date.now() - 1200000, type: "Mesa" },
+            { id: 2041, table: "Delivery", items: [{name: "Papas Trufadas", qty: 1}, {name: "Burger Doble", qty: 1}], status: "cooking", startTime: Date.now() - 600000, type: "Delivery" },
+            { id: 2042, table: "Mesa 5", items: [{name: "Cerveza", qty: 2}, {name: "Aros", qty: 1}], status: "pending", startTime: Date.now() - 120000, type: "Mesa" },
+        ];
+        
+        // --- MULTI-BRANCH DATA ---
+        const branchData = {
+            'reforma': {
+                sales: "$12,450.00",
+                salesComp: "+12% vs ayer",
+                orders: "8",
+                ordersDetail: "3 KDS · 2 Delivery · 3 Mesa",
+                prep: "14m 20s",
+                prepComp: "-2m vs objetivo",
+                ticket: "$450.00",
+                ticketComp: "Estable vs semana pasada",
+                chartData: [1200, 1900, 3000, 4500, 4200, 3100, 2500]
+            },
+            'centro': {
+                sales: "$18,320.50",
+                salesComp: "+5% vs ayer",
+                orders: "15",
+                ordersDetail: "8 KDS · 4 Delivery · 3 Mesa",
+                prep: "18m 10s",
+                prepComp: "+3m vs objetivo",
+                ticket: "$380.00",
+                ticketComp: "-5% vs semana pasada",
+                chartData: [2100, 2800, 3500, 4100, 3900, 4500, 4800]
+            },
+            'delivery': {
+                sales: "$8,940.00",
+                salesComp: "+24% vs ayer",
+                orders: "12",
+                ordersDetail: "0 KDS · 12 Delivery · 0 Mesa",
+                prep: "11m 45s",
+                prepComp: "-5m vs objetivo",
+                ticket: "$210.00",
+                ticketComp: "+10% vs semana pasada",
+                chartData: [800, 1200, 1500, 3200, 3100, 1900, 2200]
+            }
+        };
+
+        // Track chart instance globally to update it
+        let salesChartInstance = null;
+        let reportsInitialized = false;
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initChart(); // Inicializa chart con datos de 'reforma' por defecto
+            renderPOSProducts();
+            renderKDS();
+            renderOMS();
+            renderMenuEditor();
+            
+            // Clock for KDS updates
+            setInterval(() => {
+                renderKDS(); // Update timers
+            }, 30000);
+        });
+
+        // --- DASHBOARD LOGIC ---
+        function updateDashboardData(branchKey) {
+            const data = branchData[branchKey];
+            if (!data) return;
+
+            // Actualizar KPIs con animación suave (opcional, aquí directo)
+            document.getElementById('kpi-sales').innerText = data.sales;
+            document.getElementById('kpi-sales-comp').innerHTML = `<i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> ${data.salesComp}`;
+            
+            document.getElementById('kpi-orders').innerText = data.orders;
+            document.getElementById('kpi-orders-comp').innerText = data.ordersDetail;
+            
+            document.getElementById('kpi-prep').innerText = data.prep;
+            document.getElementById('kpi-prep-comp').innerHTML = `<i data-lucide="arrow-down" class="w-3 h-3 mr-1"></i> ${data.prepComp}`;
+            
+            document.getElementById('kpi-ticket').innerText = data.ticket;
+            document.getElementById('kpi-ticket-comp').innerText = data.ticketComp;
+
+            // Actualizar Gráfica
+            if (salesChartInstance) {
+                salesChartInstance.data.datasets[0].data = data.chartData;
+                salesChartInstance.update();
+            }
+
+            // Re-inicializar iconos para los nuevos elementos insertados (HTML strings)
+            lucide.createIcons();
+            
+            showNotification("Sucursal Cambiada", `Datos actualizados a: ${branchKey.toUpperCase()}`, "success");
+        }
+
+        // --- ROUTING ---
+        function router(viewName) {
+            // Hide all views
+            ['dashboard', 'pos', 'kds', 'oms', 'menu', 'reports'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if(el) el.classList.add('hidden');
+                
+                // Update nav active state
+                const btn = document.getElementById(`nav-${v}`);
+                if(btn) {
+                    if (viewName === v) {
+                        btn.classList.add('bg-brand-50', 'text-brand-600', 'dark:bg-gray-700', 'dark:text-brand-400');
+                        btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+                    } else {
+                        btn.classList.remove('bg-brand-50', 'text-brand-600', 'dark:bg-gray-700', 'dark:text-brand-400');
+                        btn.classList.add('text-gray-600', 'dark:text-gray-400');
+                    }
+                }
+            });
+
+            // Show selected view
+            const selected = document.getElementById(`view-${viewName}`);
+            selected.classList.remove('hidden');
+            
+            // Set Titles
+            const titles = {
+                'dashboard': 'Dashboard General',
+                'pos': 'Punto de Venta (POS)',
+                'kds': 'Kitchen Display System (KDS)',
+                'oms': 'Gestor de Pedidos (OMS)',
+                'menu': 'Configuración de Menú',
+                'reports': 'Reportes y Analítica'
+            };
+            document.getElementById('page-title').innerText = titles[viewName];
+
+            // Re-render specifics if needed
+            if(viewName === 'kds') renderKDS();
+            if(viewName === 'oms') renderOMS();
+            
+            // Init charts only once when entering reports view
+            if(viewName === 'reports' && !reportsInitialized) {
+                initReportCharts();
+                reportsInitialized = true;
+            }
+        }
+
+        // --- UI FUNCTIONS ---
+
+        function toggleTheme() {
+            const html = document.querySelector('html');
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.setAttribute('data-lucide', 'moon');
+            } else {
+                html.classList.add('dark');
+                icon.setAttribute('data-lucide', 'sun');
+            }
+            lucide.createIcons();
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.querySelector('aside');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('absolute');
+            sidebar.classList.toggle('h-full');
+        }
+
+        function showNotification(title, msg, type='success') {
+            const toast = document.getElementById('notification-toast');
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-msg').innerText = msg;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- POS LOGIC ---
+        function renderPOSProducts() {
+            const grid = document.getElementById('pos-products-grid');
+            grid.innerHTML = products.map(p => `
+                <button onclick="addToCart(${p.id})" class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 hover:border-brand-500 hover:shadow-md transition-all ${!p.stock ? 'opacity-50 cursor-not-allowed' : ''}">
+                    <span class="text-3xl mb-2">${p.image}</span>
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 text-center leading-tight">${p.name}</span>
+                    <span class="text-xs font-bold text-brand-600 dark:text-brand-400 mt-1">$${p.price}</span>
+                </button>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            if (!product.stock) return showNotification("Sin Stock", "Este producto no está disponible", "error");
+
+            const existing = cart.find(i => i.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('pos-cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-400 mt-10 text-sm"><i data-lucide="shopping-cart" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>Agrega productos</div>`;
+                lucide.createIcons();
+                updateTotals();
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded border border-gray-100 dark:border-gray-700">
+                    <div class="flex flex-col">
+                        <span class="font-medium text-sm text-gray-800 dark:text-gray-200">${item.name}</span>
+                        <span class="text-xs text-gray-500">$${item.price} x ${item.qty}</span>
+                    </div>
+                    <div class="font-bold text-gray-700 dark:text-gray-300">$${item.price * item.qty}</div>
+                </div>
+            `).join('');
+            
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            const tax = subtotal * 0.16;
+            const total = subtotal + tax;
+
+            document.getElementById('pos-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('pos-tax').innerText = `$${tax.toFixed(2)}`;
+            document.getElementById('pos-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function processCheckout() {
+            if (cart.length === 0) return showNotification("Carrito vacío", "Agrega items antes de cobrar", "error");
+            
+            const newOrderId = Math.floor(Math.random() * 1000) + 2050;
+            const newOrder = {
+                id: newOrderId,
+                table: "Mesa 4",
+                items: cart.map(i => ({name: i.name, qty: i.qty})),
+                status: "pending",
+                startTime: Date.now(),
+                type: "POS"
+            };
+
+            orders.unshift(newOrder); // Add to global orders
+            cart = []; // Clear cart
+            renderCart();
+            showNotification("Cobro Exitoso", `Orden #${newOrderId} enviada a KDS`);
+            
+            // Refresh KDS and OMS numbers
+            document.getElementById('pos-order-id').innerText = newOrderId + 1;
+            renderKDS();
+            
+            // Simulate dynamic KPI update
+            document.getElementById('kpi-orders').innerText = parseInt(document.getElementById('kpi-orders').innerText) + 1;
+        }
+
+        // --- KDS LOGIC ---
+        function renderKDS() {
+            const container = document.getElementById('kds-grid');
+            
+            const statusColors = {
+                'pending': 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10',
+                'cooking': 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/10',
+                'ready': 'border-l-4 border-green-500 bg-green-50 dark:bg-green-900/10'
+            };
+
+            container.innerHTML = orders.filter(o => o.status !== 'completed').map(order => {
+                const elapsed = Math.floor((Date.now() - order.startTime) / 60000);
+                let timeColor = "text-gray-500";
+                if(elapsed > 15) timeColor = "text-red-500 animate-pulse font-bold";
+                else if(elapsed > 10) timeColor = "text-orange-500";
+
+                return `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col ${statusColors[order.status]}">
+                    <div class="flex justify-between items-start mb-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+                        <div>
+                            <h4 class="font-bold text-gray-800 dark:text-white">#${order.id}</h4>
+                            <span class="text-xs text-gray-500 uppercase font-semibold">${order.table}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="${timeColor} text-sm flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${elapsed}m</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="flex-1 space-y-1 mb-4">
+                        ${order.items.map(item => `
+                            <li class="text-sm text-gray-700 dark:text-gray-300 flex justify-between">
+                                <span><span class="font-bold border border-gray-300 dark:border-gray-600 rounded px-1 text-xs mr-1">${item.qty}</span> ${item.name}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+
+                    <button onclick="advanceOrderStatus(${order.id})" class="w-full py-2 rounded font-medium text-sm transition-colors ${getButtonColor(order.status)}">
+                        ${getActionText(order.status)}
+                    </button>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function getButtonColor(status) {
+            if(status === 'pending') return 'bg-blue-600 text-white hover:bg-blue-700';
+            if(status === 'cooking') return 'bg-green-600 text-white hover:bg-green-700';
+            return 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200';
+        }
+
+        function getActionText(status) {
+            if(status === 'pending') return 'Empezar Preparación';
+            if(status === 'cooking') return 'Marcar Listo';
+            return 'Completar / Archivar';
+        }
+
+        function advanceOrderStatus(id) {
+            const order = orders.find(o => o.id === id);
+            if(order.status === 'pending') order.status = 'cooking';
+            else if(order.status === 'cooking') order.status = 'ready';
+            else if(order.status === 'ready') order.status = 'completed';
+            
+            renderKDS();
+            renderOMS(); // Update OMS if open
+        }
+
+        // --- OMS LOGIC ---
+        function renderOMS() {
+            const tbody = document.getElementById('oms-table-body');
+            tbody.innerHTML = orders.map(order => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">#${order.id}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded text-xs font-semibold ${order.type === 'Delivery' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${order.type}</span>
+                    </td>
+                    <td class="px-6 py-4">${order.table}</td>
+                    <td class="px-6 py-4">$${(Math.random() * 500 + 100).toFixed(2)}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize 
+                            ${order.status === 'ready' ? 'bg-green-100 text-green-800' : 
+                              order.status === 'cooking' ? 'bg-blue-100 text-blue-800' : 
+                              'bg-yellow-100 text-yellow-800'}">
+                            <span class="w-1.5 h-1.5 rounded-full ${order.status === 'ready' ? 'bg-green-500' : order.status === 'cooking' ? 'bg-blue-500' : 'bg-yellow-500'}"></span>
+                            ${order.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">Hace ${Math.floor((Date.now() - order.startTime) / 60000)}m</td>
+                    <td class="px-6 py-4 text-right">
+                        <button class="text-brand-600 hover:text-brand-900 text-xs font-semibold">Ver Detalles</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- MENU EDITOR LOGIC ---
+        function renderMenuEditor() {
+            const tbody = document.getElementById('menu-table-body');
+            tbody.innerHTML = products.map(p => `
+                <tr class="border-b border-gray-100 dark:border-gray-700">
+                    <td class="px-6 py-4 flex items-center gap-3">
+                        <span class="text-xl">${p.image}</span>
+                        <span class="font-medium text-gray-800 dark:text-gray-200">${p.name}</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">${p.category}</td>
+                    <td class="px-6 py-4 font-mono text-sm">$${p.price.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="toggleStock(${p.id}, 'stock')" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${p.stock ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition ${p.stock ? 'translate-x-6' : 'translate-x-1'}"></span>
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                         <button onclick="toggleStock(${p.id}, 'qr')" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${p.qr_active ? 'bg-brand-600' : 'bg-gray-200 dark:bg-gray-700'}">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition ${p.qr_active ? 'translate-x-6' : 'translate-x-1'}"></span>
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button class="text-gray-400 hover:text-brand-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function toggleStock(id, type) {
+            const product = products.find(p => p.id === id);
+            if(type === 'stock') product.stock = !product.stock;
+            if(type === 'qr') product.qr_active = !product.qr_active;
+            
+            renderMenuEditor();
+            renderPOSProducts(); // Update POS if stock changed
+            showNotification("Menú Actualizado", `${product.name} ${product.stock ? 'disponible' : 'agotado'}`, "success");
+        }
+
+        // --- CHARTS ---
+        function initChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            // Assign to variable so we can update it later
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm'],
+                    datasets: [{
+                        label: 'Ventas Totales ($)',
+                        data: branchData['reforma'].chartData, // Default data
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function initReportCharts() {
+            // Chart 1: Categories
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctxCat, {
+                type: 'bar',
+                data: {
+                    labels: ['Hamburguesas', 'Bebidas', 'Entradas', 'Postres'],
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: [8500, 4200, 2800, 1500],
+                        backgroundColor: [
+                            'rgba(14, 165, 233, 0.8)', // brand-500
+                            'rgba(16, 185, 129, 0.8)', // green
+                            'rgba(245, 158, 11, 0.8)', // orange
+                            'rgba(139, 92, 246, 0.8)'  // purple
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { display: false } }, 
+                        x: { grid: { display: false } } 
+                    }
+                }
+            });
+
+            // Chart 2: Payment Methods
+            const ctxPay = document.getElementById('paymentMethodChart').getContext('2d');
+            new Chart(ctxPay, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tarjeta', 'Efectivo', 'Apps (Uber/Rappi)', 'QR'],
+                    datasets: [{
+                        data: [55, 25, 15, 5],
+                        backgroundColor: [
+                            '#0ea5e9', '#64748b', '#8b5cf6', '#f59e0b'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
